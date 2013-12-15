@@ -6,7 +6,22 @@ DB_FILE = '/home/peter/projects/jdk/db/jdk_entries.db'
 CURRENT_DATESTAMP = "DATETIME(CURRENT_TIMESTAMP, 'localtime')" # special sqlite3 syntax
 TEMP_FILE = '/home/peter/projects/jdk/db/temp.jdk'
 
-def db_execute(sql, expect_return_values=False):
+def db_execute(sql, quote_tuple, expect_return_values=False):
+  db_connection = sqlite3.connect(DB_FILE) 
+  db_cursor = db_connection.cursor()
+  db_cursor.execute(sql, quote_tuple)
+  
+  if (expect_return_values):
+    return_values = db_cursor.fetchall()
+  else:
+    return_values = None
+    db_connection.commit()
+
+  db_connection.close()
+
+  return return_values  
+
+def db_execute_old(sql, expect_return_values=False):
   db_connection = sqlite3.connect(DB_FILE) 
   db_cursor = db_connection.cursor()
   db_cursor.execute(sql)
@@ -47,33 +62,39 @@ class Entry:
 
   @staticmethod
   def get_home_screen_data():
+    quote_tuple = ()
     sql = "SELECT jdk_entries.id, jdk_entries.title " + \
       "FROM jdk_entries " + \
       "ORDER BY date_last_modified DESC " + \
       "LIMIT 30;" 
 
-    return db_execute(sql, True)
+    return db_execute(sql, quote_tuple, True)
 
   @staticmethod
   def search_existing_entries(keyword=None, from_date=None, to_date=None):
     total_parameters = 0
+    quote_tuple = ()
 
     if (keyword):
-      keyword_string = "(jdk_entries.title LIKE '%" + keyword + "%' OR " + \
-        "jdk_entries.body LIKE '%" + keyword + "%') "
+      keyword_string = '(jdk_entries.title LIKE ? OR ' + \
+        'jdk_entries.body LIKE ?) '
       total_parameters += 1
+      keyword = '%' + keyword + '%'
+      quote_tuple += keyword, keyword
     else:
       keyword_string = ""  
   
     if (from_date):
-      from_date_string = "jdk_entries.date_last_modified >= '" + from_date + "' "
+      from_date_string = "jdk_entries.date_last_modified >= ? "
       total_parameters += 1
+      quote_tuple += from_date,
     else:
       from_date_string = ""
 
     if (to_date):
-      to_date_string = "jdk_entries.date_last_modified <= '" + to_date + "' "
+      to_date_string = "jdk_entries.date_last_modified <= ? "
       total_parameters += 1
+      quote_tuple += to_date,
     else:
       to_date_string = ""
 
@@ -87,32 +108,37 @@ class Entry:
       to_date_string + \
       "LIMIT 30;"
 
-    return db_execute(sql, True)
+    return db_execute(sql, quote_tuple, True)
 
   def populate_entry_data(self):
+    quote_tuple = self.entry_id,
+
     sql = "SELECT jdk_entries.title, jdk_entries.body " + \
       "FROM jdk_entries " + \
-      "WHERE jdk_entries.id = " + self.entry_id + ";" 
+      "WHERE jdk_entries.id = ?;" 
 
-    self.title, self.body = db_execute(sql, True)[0] # returns array
+    self.title, self.body = db_execute(sql, quote_tuple, True)[0] # returns array
     
     return None
   
   def create_entry(self):
+    quote_tuple = CURRENT_DATESTAMP, CURRENT_DATESTAMP
+
     sql = "INSERT INTO jdk_entries " + \
       "(title, body,  date_created, date_last_modified)" + \
-      "VALUES ('', '', " + CURRENT_DATESTAMP + \
-      ", " + CURRENT_DATESTAMP + ");"
+      "VALUES ('', '', ?, ?);"
 
-    db_execute(sql)
+    db_execute(sql, quote_tuple)
 
     return None
 
   def set_entry_id(self):
+    quote_tuple = ()
+    
     sql = "SELECT MAX(id) FROM jdk_entries;"
 
     # returns a nested list, need to get at it with array syntax
-    self.entry_id = str(db_execute(sql, True)[0][0]);     
+    self.entry_id = str(db_execute(sql, quote_tuple, True)[0][0]);     
 
     return None
 
@@ -120,22 +146,26 @@ class Entry:
     if (not self.title):
       self.title = title
 
-    # This will fall to a sql injection 
-    sql = "UPDATE jdk_entries SET title = '" + self.title + "'" + \
-          "WHERE jdk_entries.id = '" + self.entry_id + "';" 
+    quote_tuple = self.title, self.entry_id
 
-    db_execute(sql)
+    # This will fall to a sql injection 
+    sql = "UPDATE jdk_entries SET title = ?" + \
+          "WHERE jdk_entries.id = ?;" 
+
+    db_execute(sql, quote_tuple)
     
     self.update_date_modified()
 
     return None
 
   def update_date_modified(self):
+    quote_tuple = CURRENT_DATESTAMP, self.entry_id
+
     sql = "UPDATE jdk_entries " + \
-      "SET date_last_modified = " + CURRENT_DATESTAMP + " " + \
-      "WHERE jdk_entries.id = '" + self.entry_id + "';"
+      "SET date_last_modified = ? " + \
+      "WHERE jdk_entries.id = ?;"
     
-    db_execute(sql)
+    db_execute(sql, quote_tuple)
 
     return None
 
@@ -151,11 +181,12 @@ class Entry:
     if (body_new != self.body):
       self.body = body_new 
     
-      sql = "UPDATE jdk_entries " + \
-        "SET body = '" + self.body + "' " + \
-        "WHERE jdk_entries.id = '" + self.entry_id + "';"
+      quote_tuple = self.body, self.entry_id
 
-      db_execute(sql)
+      sql = "UPDATE jdk_entries SET body = ? " + \
+        "WHERE jdk_entries.id = ?;"
+
+      db_execute(sql, quote_tuple)
       self.update_date_modified()
     
     self.remove_temp_file()

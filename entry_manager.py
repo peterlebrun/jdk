@@ -169,6 +169,8 @@ def display_help_text():
   s {optional k:keyword f:fromdate t:todate}
     Search for existing entries
     Requires at least one of keyword, fromdate, or todate
+    Note that date has to be in the form of yyyy-mm-dd
+    i.e. Always 2 digit days and months (06, 04, 13, etc)
     Example: s k:keyword f:2013-10-21
 
   t id
