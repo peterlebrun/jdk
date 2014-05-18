@@ -242,19 +242,3 @@ class Entry:
       export_file.close()
 
     return None
-"""
-Entry has:
-  title
-  body
-  id
-  date created
-  date modified
-  file location
-
-Entry needs
-  set title (saved in DB)
-  create file (touch)
-  open file (w vim)
-  update date modified (in DB)
-  create entry meta data (in DB)
-""" 

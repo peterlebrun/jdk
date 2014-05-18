@@ -29,8 +29,7 @@ def run_main_loop():
   clear_and_print_notice_text()
   populate_home_screen_data()
 
-  user_command = raw_input("#:>") # add in "if sys.argv[1] then that else raw_input
-#(i.e. any command should be available as a first input
+  user_command = raw_input("#:>")
 
   while (user_command[0] != "q"):
     command, parameters = peel(user_command)  
@@ -91,7 +90,6 @@ def create_new_entry(parameters):
     e.update_title(raw_input("#: >> "))
     print "\nTitle set.\n"
   
-  # autonaming option - a, q, etc (i.e. one letter titles bring up autonaming conventions)
   
   return None
 
@@ -101,10 +99,6 @@ def read_existing_entry(parameters): # some option to read last or read random
 
   e = Entry(entry_id, writeable = writeable)
   e.edit_entry()
-  # create entry object
-  # call entry_object.open_file()
-  # include read/write parameters
-  # if file saved (check for file update) call update_date_modified method
 
   return None
 
@@ -124,15 +118,8 @@ def search_entries(parameters):
     elif(param and param[0] == "t"):
       to_date = param[2:]
   
-  #keyword   = "" if (keyword is None) else keyword
-  #from_date = "" if (from_date is None) else from_date
-  #to_date   = "" if (to_date is None) else to_date
-
   clear_and_print_notice_text()
 
-  #print keyword, from_date, to_date
-  #print param1, param2, param3 
-  #print "Results of searching for " + keyword + ":\n"
   titles = Entry.search_existing_entries(keyword, from_date, to_date)
   print_titles(titles)
 
@@ -187,70 +174,5 @@ def display_help_text():
   
   return None
 
-#def create_new_entry_old(title = None):
-### create new entry object
-### run entry.open_file 
-### runs when the user enters n
-### followed by optional title
-### creates file in the /entries/ folder
-### creates entry in entries table, consisting of file location, date created, date modified (= date created at first), key, and optional title
-### call vim with appropriate parameters
-### upon closing vim, prompt user for a title if one not supplied
-### update db entry with appropriate data (date modified, title) 
-
-# create new entry in entries table
-# # include the title, the entry location, the date created, date modified = date created
-# return the key of the new entry
-# create new file in entries directory (named with the key of the file)
-#  return None
-
-#def open_vim(filename = None, write = True):
-### abstract away vim interactions
-#  subprocess.call(['vim', filename])
-#  return None
-
-# def read_existing_entry(entry_id, write = False):
-### runs when the user enters r {entry_id} [w(rite)]
-### hits the database, gets the file location
-### opens the file in vim, sets to readonly but not if write is true
-### if not readonly, & file saves, update date_modified after file closes
-#  return None
-
-#def quit_program():
-### implement as part of the main loop
-#  return None
-
 run_main_loop()
 
-#for row in cursor.fetchall():
-#  print row[0], '\t', row[1]
-
-# test for too many params entered
-# test for too much whitespace entered
-# Split user command on " " (spaces)
-# item 1 = action (one of {n, e, s, q})
-# item 2 = modifier (see below)
-# need some way to validate these modifiers
-
-"""
-options [] = optional, {} = required
-n [title] = new item (also jdk n "titlename") (doesn't need a title initially, but if no title, prompt on exit)
-  create new entry. [title] is optional, but otherwise will be prompted for a title when quitting
-e {action} {key} read existing entry
-  open existing entry.  {action} = r for read-only, w to edit.  {key} = numeric id of entry.
-s {[keyword] [from_date] [to_date]}
-  search for one of these items
-q quit
-
-How it works
-
-* Get user input
-* Take action based on user input
-* One of
-** Create new file (func)
-** Edit existing file (func)
-** Search for existing file (func)
-** Export file (later) - who even knows if I'll use this
-** Quit
-
-"""
